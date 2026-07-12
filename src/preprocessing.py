@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 
 
-BASE_DIR = Path(__file__).resolve().parent
-RAW_DIR = BASE_DIR / "data" / "raw"
-PROCESSED_DIR = BASE_DIR / "data" / "processed"
+ROOT_DIR = Path(__file__).resolve().parents[1]
+RAW_DIR = ROOT_DIR / "data" / "raw"
+PROCESSED_DIR = ROOT_DIR / "data" / "processed"
 
 MARKDOWN_COLS = ["MarkDown1", "MarkDown2", "MarkDown3", "MarkDown4", "MarkDown5"]
 

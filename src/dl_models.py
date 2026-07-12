@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 from neuralforecast import NeuralForecast
 
-from preprocessing import add_unique_id, MARKDOWN_COLS
+from .preprocessing import add_unique_id, MARKDOWN_COLS
 
 
 class NeuralForecastPipeline:
