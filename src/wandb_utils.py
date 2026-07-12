@@ -59,3 +59,30 @@ def download_model_artifact(artifact_name: str, alias: str = "latest", entity: s
     artifact = run.use_artifact(artifact_ref, type="model")
     path = Path(artifact.download())
     return run, path
+
+
+def save_and_log_pipeline_artifact(
+    run,
+    model_name: str,
+    dirs: dict[str, str | Path] | None = None,
+    files: dict[str, str | Path] | None = None,
+    metadata: dict | None = None,
+    aliases=None,
+):
+    """Logs a W&B artifact combining one or more directories and/or files.
+
+    Used for the deep-learning pipelines, which can't be joblib-pickled the way
+    WalmartSalesForecaster can (neuralforecast objects wrap torch/Lightning
+    internals) -- their own native save()/load() directory format is bundled
+    directly instead. `dirs`/`files` map an internal artifact-relative name to
+    a source path, e.g. dirs={"nf_model": "models/dlinear_nf"}.
+    """
+    import wandb
+
+    artifact = wandb.Artifact(model_name, type="model", metadata=metadata or {})
+    for name, path in (dirs or {}).items():
+        artifact.add_dir(str(path), name=name)
+    for name, path in (files or {}).items():
+        artifact.add_file(str(path), name=name)
+    run.log_artifact(artifact, aliases=aliases or ["latest"])
+    return artifact
