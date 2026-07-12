@@ -362,7 +362,7 @@ W&B-ზე ლოგირდება:
 4. LightGBM და XGBoost კარგად იყენებენ lag, rolling და aggregate feature-ებს.
 5. Classical models თითოეულ სერიაზე ცალკე fit-ს საჭიროებს, რაც ნელია და inference-ს ართულებს.
 
-საბოლოოდ, ჩემს მიერ გატესტილ მოდელებში საუკეთესო შედეგი მიიღო LightGBM-მა. მან XGBoost-ზე უკეთესი validation WMAE აჩვენა და სწორედ LightGBM pipeline გამოვიყენე Kaggle submission-ისთვის.
+საბოლოოდ, გატესტილ მოდელებში საუკეთესო შედეგი მიიღო LightGBM-მა. მან XGBoost-ზე უკეთესი validation WMAE აჩვენა და სწორედ LightGBM pipeline გამოვიყენეთ Kaggle submission-ისთვის.
 
 ---
 
@@ -382,7 +382,7 @@ W&B-ზე ლოგირდება:
 |---|---|---|---|
 | DLinear | წრფივი დეკომპოზიცია (trend + seasonal) | არა | ორი `Linear` შრე, ყველაზე მარტივი |
 | N-BEATS | სტეკირებული MLP ბლოკები, doubly-residual | არა | 2.6M პარამეტრი, ყველაზე მაღალი capacity ამ ოთხს შორის |
-| PatchTST | Transformer + patch-based tokenization | არა | ViT-ის იდეის ანალოგი დროით სერიებზე |
+| PatchTST | Transformer + patch-based tokenization | არა | ViT-ის იდეის ანალოგი თაიმს სერიებზე |
 | TFT | LSTM + attention + variable-selection GRN | **დიახ** | ერთადერთი DL მოდელი, რომელიც რეალურად იყენებს `CPI`/`MarkDown*`/`IsHoliday`-ს |
 | TimesFM (bonus) | Google-ის pretrained foundation model | არა | Zero-shot — არანაირი ტრენინგი ამ dataset-ზე |
 
@@ -398,12 +398,12 @@ W&B-ზე ლოგირდება:
 | TFT | 2593.39 | ჯერ არ არის tuning-ის ეტაპზე — `hidden_size`/`n_head` CPU-ს სისწრაფისთვის შემცირებულია (128/4 → 32/2) |
 | TimesFM (bonus) | 2507.66 | N/A — zero-shot, არანაირი გრადიენტული ტრენინგი ამ dataset-ზე |
 
-**DLinear-სა და N-BEATS-ს შორის საინტერესო კონტრასტი**: სრულიად საპირისპირო tuning ქცევა აჩვენეს. DLinear-ს (დაბალი capacity) 16000 ნაბიჯი დასჭირდა კონვერგენციისთვის, ხოლო N-BEATS-მა (მაღალი capacity, სტეკირებული MLP ბლოკები) 200 ნაბიჯის შემდეგ სწრაფად overfit გახდა. ეს პირდაპირ ასახავს ორი არქიტექტურის capacity-ის განსხვავებას — DLinear-ს მეტი გრადიენტული ნაბიჯი სჭირდება, N-BEATS-ს კი მეტისმეტად სწრაფად ემახსოვრება training noise.
+**DLinear-სა და N-BEATS-ს შორის საინტერესო კონტრასტი**: სრულიად საპირისპირო tuning ქცევა აჩვენეს. DLinear-ს (დაბალი capacity) 16000 ნაბიჯი დასჭირდა კონვერგენციისთვის, ხოლო N-BEATS (მაღალი capacity, სტეკირებული MLP ბლოკები) 200 ნაბიჯის შემდეგ სწრაფად overfit გახდა. ეს პირდაპირ ასახავს ორი არქიტექტურის capacity-ის განსხვავებას - DLinear-ს მეტი გრადიენტული ნაბიჯი სჭირდება, N-BEATS-ს კი მეტისმეტად სწრაფად ემახსოვრება training noise.
 
 
 ## Pipeline / Model Registry მიდგომა
 
-DL pipeline-ები `src/dl_models.py`-შია - იგივე self-contained `predict(raw_df) -> DataFrame` კონტრაქტით, რასაც `WalmartSalesForecaster` იყენებს ნაწილი 1-ში. განსხვავება მხოლოდ შენახვის მექანიზმშია: `neuralforecast`-ის ობიექტები (torch/Lightning internals) `joblib`-ით საიმედოდ არ pickle-დება, ამიტომ `nf.save()`-ის native checkpoint-დირექტორია პირდაპირ ილოგება W&B artifact-ად (`src/wandb_utils.py`-ის `save_and_log_pipeline_artifact` helper-ით - TFT-სთვის მაგალითად `nf_model`-ის დირექტორია + `features.csv`/`stores.csv` ერთად ილოგება ერთ artifact-ში).
+DL pipeline-ები `src/dl_models.py`-შია - იგივე self-contained `predict(raw_df) -> DataFrame` კონტრაქტით, რასაც `WalmartSalesForecaster` იყენებს ნაწილ 1-ში. განსხვავება მხოლოდ შენახვის მექანიზმშია: `neuralforecast`-ის ობიექტები (torch/Lightning internals) `joblib`-ით სწორად არ pickle-დება, ამიტომ `nf.save()`-ის native checkpoint-დირექტორია პირდაპირ ილოგება W&B artifact-ად (`src/wandb_utils.py`-ის `save_and_log_pipeline_artifact` helper-ით - TFT-სთვის მაგალითად `nf_model`-ის დირექტორია + `features.csv`/`stores.csv` ერთად ილოგება ერთ artifact-ში).
 
 თითოეული DL არქიტექტურა საკუთარი, ცალკე W&B artifact-ის სახელით ილოგება (`dlinear-pipeline`, `nbeats-pipeline`, `patchtst-pipeline`, `tft-pipeline`, `timesfm-pipeline`) — `latest`/`candidate` ალიასებით. DL-ის საუკეთესო მოდელს (N-BEATS) დამატებით აქვს `champion` ალიასი.
 
@@ -418,7 +418,6 @@ DL pipeline-ები `src/dl_models.py`-შია - იგივე self-contai
 
 1. **Capacity vs. tuning direction**: მარტივმა (DLinear) და რთულმა (N-BEATS) მოდელებმა საპირისპირო `max_steps` ქცევა აჩვენეს — დაბალი capacity მეტ ნაბიჯს საჭიროებს კონვერგენციისთვის, მაღალი capacity კი სწრაფად overfit ხდება.
 2. **Exogenous ცვლადების ხელმისაწვდომობა**: DLinear/N-BEATS/PatchTST საერთოდ ვერ იყენებენ `CPI`/`MarkDown*`/`IsHoliday`-ს — მხოლოდ TFT-ს შეუძლია, რაც მას თეორიულად ყველაზე ახლოს აყენებს LightGBM-თან feature-გამოყენების კუთხით, თუმცა practice-ში ყველაზე ცუდი შედეგი აქვს ამ ხუთს შორის.
-3. **Foundation model-ის კონკურენტუნარიანობა**: TimesFM-მა (ტრენინგის გარეშე) TFT-ს
 
 
 
