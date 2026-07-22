@@ -89,11 +89,17 @@ class TimesFMForecastPipeline:
         self.train: pd.DataFrame | None = None
 
     @classmethod
-    def load(cls, train_csv_path: str | Path) -> "TimesFMForecastPipeline":
+    def load(
+        cls, train_csv_path: str | Path, checkpoint_path: str | Path | None = None
+    ) -> "TimesFMForecastPipeline":
+        """Loads the pretrained TimesFM weights, optionally overriding them with a
+        fine-tuned checkpoint directory/file (as produced by model.save_pretrained())."""
         import timesfm
 
         obj = cls()
         obj.model = timesfm.TimesFM_2p5_200M_torch.from_pretrained(obj.REPO_ID)
+        if checkpoint_path is not None:
+            obj.model.load_checkpoint(str(checkpoint_path))
         obj.model.compile(timesfm.ForecastConfig(
             max_context=obj.INPUT_SIZE,
             max_horizon=obj.HORIZON,
