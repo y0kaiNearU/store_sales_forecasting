@@ -29,6 +29,7 @@ Holiday კვირებზე შეცდომა უფრო მძიმ
 
 პროექტში ძირითადი ფაილებია:
 
+- eda_and_feature_engineering.ipynb
 - model_experiment_ARIMA_SARIMA.ipynb
 - model_experiment_DLinear.ipynb
 - model_experiment_LightGBM.ipynb
@@ -81,6 +82,35 @@ python run_smoke_test.py
 ყველაზე მნიშვნელოვანი notebook-ებია LightGBM, XGBoost და model_inference, რადგან საბოლოო submission tree-based საუკეთესო მოდელით გენერირდება.
 
 _(`pyproject.toml`/`uv.lock` არსებობს რეპოზიტორიის root-ში და ორივე ნაწილის დამოკიდებულებებს მოიცავს — `uv sync` ალტერნატივაცაა `pip install -r requirements.txt`-ის ნაცვლად.)_
+
+---
+
+## EDA — ძირითადი მიგნებები
+
+EDA და feature engineering -ის ნაწილი `eda_and_feature_engineering.ipynb` ნოუთბუკშია.
+
+### სტატისტიკა და missing values
+
+train.csv შეიცავს 421,570 ჩანაწერს (Store + Dept + Date კომბინაცია). Weekly_Sales-ის საშუალო მნიშვნელობაა ~15,981, თუმცა დიაპაზონი ძალიან ფართოა (მინ. -4,988-დან მაქს. 693,099-მდე), რაც აჩვენებს outlier-ებისა და returns/negative sales-ის არსებობას. features.csv-ში მნიშვნელოვანი მოცულობის missing data გვხვდება MarkDown1-5 სვეტებში (~4,000-5,000 row თითოეულში) და CPI/Unemployment-ში (585 row) — ეს გავლენას ახდენს feature engineering ეტაპზე fallback მნიშვნელობების შერჩევაზე.
+
+### Seasonality და trend
+
+კვირეული საშუალო გაყიდვების time series აჩვენებს განმეორებად წლიურ spike-ებს, ძირითადად ნოემბერ-დეკემბერში, holiday სეზონზე.
+
+### Holiday-ს ეფექტი
+
+Holiday კვირების საშუალო გაყიდვა (17,035.82) დაახლოებით 7%-ით მაღალია non-holiday კვირებთან შედარებით (15,901.45) — ეს ადასტურებს, რატომაა საჭირო holiday კვირებზე მეტი წონის მინიჭება (sample weights) tree-based მოდელებში და ცალკე holiday/retail-period feature-ების დამატება.
+
+### Autocorrelation (ACF) და Partial Autocorrelation (PACF)
+
+დამატებით ჩატარდა ACF/PACF ანალიზი (52 lag-მდე, ერთი წლის სიღრმეზე) კვირეულ საშუალო გაყიდვებზე:
+
+- **ADF ტესტი** (Augmented Dickey-Fuller): raw სერიაზე ADF statistic = -5.93, p-value ≈ 2.4×10⁻⁷ — unit root null hypothesis უარყოფილია, ანუ სერია სტაციონარულია mean-reversion-ის გაგებით (არ აქვს stochastic trend).
+- **ACF**: lag 1-ზე კორელაცია ≈0.33 (short-term momentum), lag 52-ზე მკვეთრი spike ≈0.48 - ადასტურებს ძლიერ წლიურ seasonality-ს.
+- **PACF**: მკვეთრად იკლებს lag 1-2-ის შემდეგ, რაც ნიშნავს, რომ direct (non-seasonal) დამოკიდებულება ძირითადად ბოლო 1-2 კვირაზეა.
+- **Seasonal differencing** (lag 52): დიფერენცირების შემდეგაც სერია სტაციონარულია (ADF statistic = -7.40, p-value ≈ 7.7×10⁻¹¹).
+
+ეს მიგნებები პირდაპირ ასაბუთებს ქვემოთ ჩამოთვლილ feature engineering გადაწყვეტილებებს: `lag_52` და calendar `week_sin`/`week_cos` feature-ების არჩევანს (წლიური seasonality lag 52-ზე), `lag_1`-ისა და მოკლევადიანი rolling window-ების (`rolling_mean_4`, `rolling_std_4`) მნიშვნელობას (PACF-ის მკვეთრი cutoff მოკლე lag-ებზე), და classical models-ის ნაწილში SARIMA-ს seasonal order-ის შერჩევას (period=52).
 
 ---
 
